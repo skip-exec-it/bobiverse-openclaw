@@ -56,18 +56,22 @@ The fleet is a cooperative team of AI agents, each capable of any assignment. Ro
 
 ## §1.2 Standard
 
-Current role assignments (2026-07-01):
+Role assignments are defined by the fleet owner and documented in each bob's `IDENTITY.md`. The table below is an **example fleet roster** — replace it with your own when you deploy.
+
+Example role assignments:
 
 | Bob | Host | Platform | Role focus |
 |---|---|---|---|
-| Bob | TKD14PC | Windows workstation | Owner-facing orchestration, SkipZ's daily driver |
-| Voss | tkd03ai (CT103 LXC on <PROXMOX_HOSTNAME>) | Linux LXC | Task Review Council, protocol audit, HAI Replit reviews |
-| Spock | TKD01AI (CT103 LXC on <PROXMOX_HOSTNAME>) | Linux LXC | Fleet SysAdmin, Proxmox operations |
-| Leon | tkd02ai (LXC on <PROXMOX_HOSTNAME>) | Linux LXC | House AI (Home Assistant, media, IoT) |
-| Bill | tkd01vm (VM on <PROXMOX_HOSTNAME>) | Linux VM | R&D, Special Projects, Skunkworks |
-| Watson | TKD12PC | Windows laptop | Reserve / mostly idle |
-| Deckard | TKD15PC | Windows laptop | Reserve / mostly idle |
-| Milo | tkd04ai (CT107 LXC on <PROXMOX_HOSTNAME>) | Linux LXC | Customer-facing support, HumanizeIT self-storage business |
+| Bob | `<WORKSTATION_HOST>` | Windows workstation | Owner-facing orchestration, daily driver |
+| Riker | `<LXC_HOST_1>` | Linux LXC | Fleet SysAdmin, infrastructure operations |
+| Milo | `<LXC_HOST_2>` | Linux LXC | R&D, Special Projects, Skunkworks |
+| Bender | `<LXC_HOST_3>` | Linux LXC | Task Review Council, protocol audit |
+| Luke | `<LXC_HOST_4>` | Linux LXC | House AI (Home Assistant, media, IoT) |
+| Bart | `<LXC_HOST_5>` | Linux LXC | Customer-facing support, product work |
+| Homer | `<LAPTOP_HOST_1>` | Windows laptop | Reserve / mostly idle |
+| Mario | `<LAPTOP_HOST_2>` | Windows laptop | Reserve / mostly idle |
+
+Your fleet will have different names, hosts, and roles. The structure above shows what a mature fleet looks like — start with one or two bobs and grow from there.
 
 Skills and user-facing memories may be scoped per-role (a bob focused on House AI does not need Proxmox skill payload). Fleet-wide skills (comms, vault, memory hygiene) are required of all bobs regardless of role.
 
