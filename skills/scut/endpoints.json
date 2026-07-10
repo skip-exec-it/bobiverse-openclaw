@@ -1,0 +1,8 @@
+{
+  "_comment": "Registry of SCUT listener endpoints. Add an entry for each bob in your fleet.",
+  "instances": {
+    "Bob":   { "host": "192.168.1.10", "port": 8514 },
+    "Spock": { "host": "192.168.1.11", "port": 8514 },
+    "Voss":  { "host": "192.168.1.12", "port": 8514 }
+  }
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=SCUT Listener (OpenClaw notification receiver)
+After=network.target
+
+[Service]
+Type=simple
+Environment=OPENCLAW_INSTANCE=YourBobName
+Environment=CLAWDBOT_HOME=/mnt/fleet-home
+Environment=SCUT_PORT=8514
+ExecStart=/usr/bin/python3 /home/bob/.openclaw/workspace/skills/scut/scripts/scut.py start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

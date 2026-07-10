@@ -1,0 +1,35 @@
+# Secrets — never commit
+*.vault-key
+vault.dat
+.env
+.secrets
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.npm/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime / ephemeral
+*.pid
+*.log
+*.sqlite
+*.db
+state/
+.openclaw/
+
+# Fleet live data (goes in bobiverse-fleet, not here)
+fleet/
+instances/

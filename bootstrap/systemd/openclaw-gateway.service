@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/bob/.openclaw
+Environment=OPENCLAW_INSTANCE=YourBobName
+Environment=CLAWDBOT_HOME=/mnt/fleet-home
+ExecStart=/home/bob/.npm-global/bin/openclaw gateway start --bind lan
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,11 @@
+# Drop-in override for openclaw-gateway.service
+# Copy to ~/.config/systemd/user/openclaw-gateway.service.d/<bobname>-overrides.conf
+# Edit OPENCLAW_INSTANCE and CLAWDBOT_HOME for this bob, then:
+#   systemctl --user daemon-reload
+#   systemctl --user restart openclaw-gateway
+
+[Service]
+Environment=OPENCLAW_INSTANCE=YourBobName
+Environment=CLAWDBOT_HOME=/mnt/fleet-home
+# Uncomment to override the npm global bin path if needed:
+# Environment=PATH=/home/bob/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
