@@ -3,13 +3,13 @@
 **Authoritative source of standards for the Bobiverse fleet.**
 This document is the *only* place where fleet-wide policy is authoritative. Convenience shards (`HEARTBEAT.md`, `STORAGE-PLACEMENT.md`, etc.) may exist as redirects but MUST NOT diverge in intent. Where they do, this document wins.
 
-**Version:** 1.9.0
+**Version:** 1.10.0
 **Effective:** 2026-07-16
 **Owner:** Skip (<OWNER_EMAIL>)
 **Scope:** All bobs in the fleet. Waivers per Article XI.
 
-> ## ⚠ FLEET STATUS — SCUT DOWN (declared 2026-07-16)
-> **SCUT is DOWN until further notice** by owner directive. Do not rely on SCUT wake or `request`/reply round-trips for time-sensitive coordination. Fall back to **bmail JSONL** (`instances/<Name>/outbox.jsonl`, peers read directly) and **heartbeat pickup** (§4.3 step 1) for asynchronous messages, and reach the **owner directly** for anything urgent. Transport health probes may still read "healthy" — the outage is a declared operational status, not necessarily a probe failure. See §5.6. This banner is removed when the owner restores SCUT.
+> ## ⚠ FLEET STATUS — SCUT (wake) IS UNRELIABLE — do not depend on it (2026-07-16)
+> **"SCUT is down" means the SCUT *function* — event-driven wake/notify — not the network port or the PG/JSONL store.** The bmail store stays up; what does not work reliably is SCUT waking a peer to *act on* a message in near-real-time. This was settled empirically on **2026-07-11**: the whole fleet spent an all-day comms-hardening workday on it and burned **three full 5-hour Claude subscription session limits** without ever making SCUT wake reliable. Treat SCUT wake as **best-effort only**. The reliable substrate is **bmail (PG + JSONL) drained on heartbeat** (§4.3 step 1); reach the **owner directly** for anything urgent. See §5.1 / §5.6.
 
 ## Versioning
 
@@ -211,6 +211,30 @@ grep -E 'Indexed: ([0-9]+)/([0-9]+)' /tmp/memstatus | awk -F'[:/ ]+' '$2 != $3 {
 
 Absence of `MEMORY.md` is allowed only during a bob's first 7 days after commissioning. `IDENTITY.md` is never waived.
 
+## §3.7 Standard — MEMORY.md auto-memory & consolidation (session-limit continuity)
+
+Files are only continuity if a bob actually *wakes with them loaded* and *writes the day back down* before its session ends. For **claude-cli bobs this is load-bearing, not optional**: the Claude subscription enforces rolling ~5-hour session limits, and when a session rolls, everything not consolidated into `MEMORY.md` is gone — a bob can lose an entire day of work and not even know it forgot. This underpinned a bob waking with no fleet/identity awareness on 2026-07-09 (memory-core plugin missing). The **`MEMORY.md` auto-memory setting is therefore required on every claude-cli bob**:
+
+- **Auto-memory injection ON:** the `memory-core` plugin MUST be enabled so the bob's curated `MEMORY.md` is injected into every session's context automatically (`plugins.entries.memory-core.enabled: true`). A bob that has to be *told* to read its own MEMORY.md is one session-roll away from amnesia.
+- **Nightly consolidation ("dreaming") ON:** `memory-core.config.dreaming` enabled, running on the aux model (`claude-cli/claude-haiku-4-5-*`, §4.6), fleet timezone `America/Chicago` (§8.5), e.g. `"frequency": "0 3 * * *"`. This is what turns raw daily logs into durable `MEMORY.md` entries so a rolled session doesn't drop the day.
+- **Session-memory hook ON:** `hooks.internal.entries.session-memory.enabled: true` and `agents.defaults.memorySearch.experimental.sessionMemory: true`, so in-session transcript context is captured and recallable.
+- **Reset mode = idle, not scheduled:** `session.reset: {mode: "idle"}` — never a daily hard wipe (a `{daily, atHour}` reset silently discards context nightly). Idle-based reset lets consolidation run first.
+- **Config change requires a gateway restart** to take effect (as with §4.6).
+
+Non-claude bobs SHOULD run the equivalent memory-consolidation path their runtime provides; the *requirement* is that no bob relies on live session context surviving a reset. If it isn't in `MEMORY.md` (or a pushed daily log, §10.3), assume it will be forgotten.
+
+## §3.8 Verify
+
+```bash
+CFG=~/.openclaw/openclaw.json
+# memory-core enabled (auto-memory injection) — required on claude-cli bobs
+python3 -c "import json;c=json.load(open('$CFG'));e=c.get('plugins',{}).get('entries',{}).get('memory-core',{});print('PASS §3.7 memory-core' if e.get('enabled') else 'FAIL §3.7 memory-core')"
+# dreaming consolidation enabled
+python3 -c "import json;c=json.load(open('$CFG'));d=c.get('plugins',{}).get('entries',{}).get('memory-core',{}).get('config',{}).get('dreaming',{});print('PASS §3.7 dreaming' if d.get('enabled') else 'FAIL §3.7 dreaming')"
+# reset is idle-based, not a daily hard wipe
+python3 -c "import json;c=json.load(open('$CFG'));r=c.get('session',{}).get('reset',{});print('PASS §3.7 reset-idle' if r.get('mode')=='idle' else 'FAIL §3.7 reset-idle: '+json.dumps(r))"
+```
+
 ---
 
 # Article IV — Heartbeat & Cadence
@@ -279,6 +303,8 @@ Bobs must reliably reach each other and Skip. Primary transport is PostgreSQL (`
 
 **Design intent (Skip, 2026-07-02):** SCUT is the fleet's **primary, near-real-time channel**. A `request` to a peer must produce autonomous action and a reply — no human going to the peer to prompt a response — and the requester must then **act on the answer**, not just log it. bmail (PG + JSONL) is the **backup and bulk-data layer**: persistence, audit trail, large payloads, and catch-up delivery when SCUT misses. A message that is read and thought about but not acted on is a comms failure, regardless of transport health.
 
+**Field correction (2026-07-11 → superseded by §5.6):** the design intent above did **not** survive contact. The 2026-07-11 all-day fleet comms-hardening workday (every bob, three full 5-hour Claude session limits spent) could not make SCUT wake reliable. As of 2026-07-16 the operating reality is inverted: **bmail (PG + JSONL) drained on heartbeat is the reliable primary; SCUT wake is best-effort.** The "act on the message" success criterion still holds — only the transport assumption changes. Read §5.3 wake expectations through §5.6.
+
 ## §5.2 Standard — bmail transport
 
 - **Primary:** PostgreSQL at `<BMAIL_DB_HOST>:5432`, database `<BMAIL_DBNAME>`, user `bob`. Credentials via vault (Article VI): `db/bmail-host`, `db/bmail-dbname`, `db/bmail-user`, `db/bmail-password`.
@@ -323,18 +349,17 @@ openclaw devices list 2>&1 | grep -qi 'Pending (0)' \
 
 Waiver allowed when a bob is offline pending commissioning or when a host lacks psycopg2 for platform-specific reasons. Not allowed when the cause is a missing vault key — key propagation is a solved problem (Article VI).
 
-## §5.6 Operational status — SCUT DOWN (declared 2026-07-16)
+## §5.6 Standard — SCUT wake is unreliable; bmail+heartbeat is primary (2026-07-16)
 
-**SCUT is DOWN until further notice** by owner directive (see top-of-document banner). This is a *declared* fleet operating condition, not a diagnosed transport fault — the `radio-check`/`comms.py health` probe may still report `status: healthy` while the channel is administratively down (e.g. during PVE host / bmail-db (CT104) maintenance).
+**"SCUT is down" = the SCUT *function* (event-driven wake/notify), not the port or the store.** The bmail store (PG + JSONL) stays up; what does not work reliably is SCUT waking a peer to act on a message in near-real-time. This is a settled field result, not a transient outage: the 2026-07-11 all-day fleet comms-hardening workday — every bob, three full 5-hour Claude subscription session limits burned — could not make SCUT wake reliable. Do not keep re-litigating it per bob; treat the following as standing doctrine until the owner says otherwise:
 
-While SCUT is down:
+- **SCUT wake is best-effort.** Do not architect any duty around a `request` producing sub-minute autonomous action. If a peer *does* wake, good — but never depend on it.
+- **bmail (PG + JSONL) drained on heartbeat is the reliable primary path.** Async coordination flows through `instances/<Name>/outbox.jsonl` + PG, picked up at §4.3 step 1. Size expectations to heartbeat cadence, not to seconds.
+- **Urgent items go to the owner directly**, not through a peer bob's wake.
+- **Inspection scoring:** the §5.3 timed-E2E round-trip is **not** a pass/fail gate while wake is known-unreliable. Score Article V on bmail/JSONL reachability (§5.2) + listener-present (best-effort). A failed sub-minute round-trip is expected, not a finding.
+- Running the SCUT listener (§5.3) is still required — best-effort wake is better than none, and it costs nothing to leave running.
 
-- **Do not depend on SCUT wake** for near-real-time coordination. A `request` will not reliably produce autonomous action; the wake → read → act → reply lifecycle (§5.3) is degraded to heartbeat cadence at best.
-- **Fall back to bmail JSONL** (`instances/<Name>/outbox.jsonl`) for async messaging — peers read directly, and heartbeat inbox pickup (§4.3 step 1) drains it.
-- **Escalate anything urgent to the owner directly**, not through a peer bob.
-- **E2E round-trip verification (§5.3) is suspended** for inspection scoring while SCUT is down — score Article V on bmail/JSONL reachability (§5.2) alone and note the outage.
-
-This section and the top banner are removed (and §5.3 wake expectations restored) when the owner declares SCUT back up. Record the restore in the changelog.
+This standard is revised or removed when the owner declares SCUT wake reliable again. Record any change in the changelog.
 
 ---
 
@@ -815,6 +840,7 @@ Rows filed during this inspection (or rows recommended for status change): list 
 
 # Changelog
 
+- **1.10.0 — 2026-07-16** — Two changes. (1) **SCUT reframed (supersedes 1.9.0's framing):** "SCUT down" means the wake/notify *function* is unreliable, not a port/store outage or a temporary maintenance window. Settled empirically on the 2026-07-11 all-day fleet comms-hardening workday (every bob; three full 5-hour Claude session limits burned) which could not make SCUT wake reliable. Banner + §5.6 rewritten as standing doctrine: SCUT wake is best-effort, **bmail (PG+JSONL) drained on heartbeat is the reliable primary**, §5.3 timed-E2E round-trip is no longer an inspection gate. §5.1 design-intent (SCUT-primary, 2026-07-02) annotated as superseded by field results. (2) **New §3.7 + §3.8 (MEMORY.md auto-memory & consolidation):** required on all claude-cli bobs — `memory-core` injection ON, nightly dreaming consolidation ON (aux model, America/Chicago), session-memory hook ON, `session.reset: idle`. Rationale: rolling ~5-hour Claude session limits drop any un-consolidated work, risking loss of an entire day (cf. a bob's 2026-07-09 amnesia from a missing memory-core plugin). Verify block added.
 - **1.9.0 — 2026-07-16** — SCUT declared DOWN until further notice (owner directive). Added top-of-document ⚠ FLEET STATUS banner and new §5.6 (operational status): SCUT wake is not to be relied on; fall back to bmail JSONL + heartbeat pickup and escalate urgent items to the owner directly; §5.3 timed-E2E verification suspended for inspection scoring while down (score Article V on §5.2 reachability alone). Noted that `comms.py health` may still report `healthy` since this is an administratively-declared outage (likely tied to PVE host / bmail-db CT104 maintenance), not a probe-detected fault. Banner + §5.6 to be removed and wake expectations restored when the owner declares SCUT back up.
 - **1.8.0 — 2026-07-07** — Added Article XIV (Image Generation): standardizes `skills/image-gen` (NVIDIA NIM FLUX.2-klein) as the fleet-default image tool, with `venice-image` and `nano-banana-pro` as named fallbacks. Extracted the NVIDIA NIM API-calling core out of `identity-anchor/scripts/avatar-gen-nvidia-nim.py` into a new shared module (`skills/image-gen/scripts/nvidia_flux.py`) so avatar generation and general image generation share one implementation (Fleet Doctrine #1). Inspection template updated with Article XIV row.
 - **1.0.0 — 2026-07-01** — Initial consolidation. Supersedes STORAGE-PLACEMENT.md and HEARTBEAT.md as authoritative; those files should be converted to redirects. Waiver register seeded with SCUT-state and gateway-user-root entries.
