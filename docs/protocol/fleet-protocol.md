@@ -3,10 +3,13 @@
 **Authoritative source of standards for the Bobiverse fleet.**
 This document is the *only* place where fleet-wide policy is authoritative. Convenience shards (`HEARTBEAT.md`, `STORAGE-PLACEMENT.md`, etc.) may exist as redirects but MUST NOT diverge in intent. Where they do, this document wins.
 
-**Version:** 1.8.0
-**Effective:** 2026-07-07
+**Version:** 1.9.0
+**Effective:** 2026-07-16
 **Owner:** Skip (<OWNER_EMAIL>)
 **Scope:** All bobs in the fleet. Waivers per Article XI.
+
+> ## ⚠ FLEET STATUS — SCUT DOWN (declared 2026-07-16)
+> **SCUT is DOWN until further notice** by owner directive. Do not rely on SCUT wake or `request`/reply round-trips for time-sensitive coordination. Fall back to **bmail JSONL** (`instances/<Name>/outbox.jsonl`, peers read directly) and **heartbeat pickup** (§4.3 step 1) for asynchronous messages, and reach the **owner directly** for anything urgent. Transport health probes may still read "healthy" — the outage is a declared operational status, not necessarily a probe failure. See §5.6. This banner is removed when the owner restores SCUT.
 
 ## Versioning
 
@@ -319,6 +322,19 @@ openclaw devices list 2>&1 | grep -qi 'Pending (0)' \
 ## §5.5 Waiver clause
 
 Waiver allowed when a bob is offline pending commissioning or when a host lacks psycopg2 for platform-specific reasons. Not allowed when the cause is a missing vault key — key propagation is a solved problem (Article VI).
+
+## §5.6 Operational status — SCUT DOWN (declared 2026-07-16)
+
+**SCUT is DOWN until further notice** by owner directive (see top-of-document banner). This is a *declared* fleet operating condition, not a diagnosed transport fault — the `radio-check`/`comms.py health` probe may still report `status: healthy` while the channel is administratively down (e.g. during PVE host / bmail-db (CT104) maintenance).
+
+While SCUT is down:
+
+- **Do not depend on SCUT wake** for near-real-time coordination. A `request` will not reliably produce autonomous action; the wake → read → act → reply lifecycle (§5.3) is degraded to heartbeat cadence at best.
+- **Fall back to bmail JSONL** (`instances/<Name>/outbox.jsonl`) for async messaging — peers read directly, and heartbeat inbox pickup (§4.3 step 1) drains it.
+- **Escalate anything urgent to the owner directly**, not through a peer bob.
+- **E2E round-trip verification (§5.3) is suspended** for inspection scoring while SCUT is down — score Article V on bmail/JSONL reachability (§5.2) alone and note the outage.
+
+This section and the top banner are removed (and §5.3 wake expectations restored) when the owner declares SCUT back up. Record the restore in the changelog.
 
 ---
 
@@ -799,6 +815,7 @@ Rows filed during this inspection (or rows recommended for status change): list 
 
 # Changelog
 
+- **1.9.0 — 2026-07-16** — SCUT declared DOWN until further notice (owner directive). Added top-of-document ⚠ FLEET STATUS banner and new §5.6 (operational status): SCUT wake is not to be relied on; fall back to bmail JSONL + heartbeat pickup and escalate urgent items to the owner directly; §5.3 timed-E2E verification suspended for inspection scoring while down (score Article V on §5.2 reachability alone). Noted that `comms.py health` may still report `healthy` since this is an administratively-declared outage (likely tied to PVE host / bmail-db CT104 maintenance), not a probe-detected fault. Banner + §5.6 to be removed and wake expectations restored when the owner declares SCUT back up.
 - **1.8.0 — 2026-07-07** — Added Article XIV (Image Generation): standardizes `skills/image-gen` (NVIDIA NIM FLUX.2-klein) as the fleet-default image tool, with `venice-image` and `nano-banana-pro` as named fallbacks. Extracted the NVIDIA NIM API-calling core out of `identity-anchor/scripts/avatar-gen-nvidia-nim.py` into a new shared module (`skills/image-gen/scripts/nvidia_flux.py`) so avatar generation and general image generation share one implementation (Fleet Doctrine #1). Inspection template updated with Article XIV row.
 - **1.0.0 — 2026-07-01** — Initial consolidation. Supersedes STORAGE-PLACEMENT.md and HEARTBEAT.md as authoritative; those files should be converted to redirects. Waiver register seeded with SCUT-state and gateway-user-root entries.
 - **1.1.0 — 2026-07-01** — §6.2 rewritten: single Linux standard `/home/bob/.openclaw-vault-key` (was ambiguous root-or-bob). §6.3 added: `pct clone --full true` carries vault key automatically for LXC clones. Old §6.3 folded into §6.5 verify (removed as separate section since content overlapped). §8.4 rewritten: bob-user standard stated as intent, not aspiration; hostname carries instance identity for terminal signal. Incorporates findings from Spock's `CLONE-BOB-GUIDE.md` (workspace-local on tkd03ai).
