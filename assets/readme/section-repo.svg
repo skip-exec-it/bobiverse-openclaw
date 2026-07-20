@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" width="100%" role="img" aria-labelledby="t d">
+  <title id="t">What's in this repo</title>
+  <desc id="d">Section: repository map — docs, protocol, templates, bootstrap, and skills.</desc>
+  <defs>
+    <pattern id="d3" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#182230"/></pattern>
+    <radialGradient id="g3" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2dd4bf" stop-opacity="0.18"/><stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/></radialGradient>
+    <style>
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+    </style>
+  </defs>
+  <rect x="1" y="1" width="1198" height="118" rx="14" fill="#0d1117" stroke="#1f2733"/>
+  <rect x="1" y="1" width="1198" height="118" rx="14" fill="url(#d3)"/>
+  <rect x="1" y="1" width="6" height="118" rx="3" fill="#2dd4bf"/>
+  <text x="690" y="104" class="sans" font-size="120" font-weight="800" fill="#121a24" opacity="0.8">03</text>
+  <g stroke="#2f3b4c" stroke-width="1.5" fill="none"><path d="M1176 14 V26 M1176 14 H1164"/><path d="M1176 106 V94 M1176 106 H1164"/></g>
+
+  <text x="40" y="48" class="mono" font-size="13" letter-spacing="4" fill="#2dd4bf">03 · REPOSITORY MAP</text>
+  <text x="38" y="86" class="sans" font-size="34" font-weight="800" fill="#e6edf3">What's in this repo</text>
+
+  <!-- motif: stacked directory blocks with glow + connector -->
+  <ellipse cx="1055" cy="60" rx="130" ry="66" fill="url(#g3)"/>
+  <g transform="translate(980,30)" class="mono" font-size="11" fill="#8b949e">
+    <path d="M8 8 V70 M22 30 H8 M36 52 H22 M22 74 H8" stroke="#233042" stroke-width="1.2" fill="none"/>
+    <rect x="0" y="0" width="150" height="16" rx="4" fill="#0f1b1a" stroke="#1f4d49"/><text x="12" y="12" fill="#7ee7de">docs/</text>
+    <rect x="14" y="22" width="150" height="16" rx="4" fill="#12141c" stroke="#2b2f3a"/><text x="26" y="34">protocol/</text>
+    <rect x="28" y="44" width="150" height="16" rx="4" fill="#12141c" stroke="#2b2f3a"/><text x="40" y="56">templates/</text>
+    <rect x="14" y="66" width="150" height="16" rx="4" fill="#12141c" stroke="#2b2f3a"/><text x="26" y="78">bootstrap/</text>
+  </g>
+</svg>
