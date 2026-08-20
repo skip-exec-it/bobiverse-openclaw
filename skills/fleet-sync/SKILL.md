@@ -5,6 +5,10 @@
 **Scripts:**
 - `../../bootstrap/fleet-sync.sh` (Linux)
 - `../../bootstrap/fleet-sync.ps1` (Windows)
+- `scripts/fleet-sanitize-export.sh` (Linux) - Create sanitized copies for sharing
+- `scripts/fleet-leak-guard.sh` (Linux) - Pre-push leak detection guard
+- `scripts/fleet-sanitize-export.ps1` (Windows) - PowerShell version
+- `scripts/fleet-leak-guard.ps1` (Windows) - PowerShell version
 
 **Manifest:** `manifest.json` — controls which paths are synced
 
@@ -52,6 +56,26 @@ find "$HOME/.openclaw/workspace/skills" -maxdepth 1 -type d -mmin -90 | grep -q 
 openclaw skills list 2>/dev/null | grep -qi '/mnt/' \
   && echo "FAIL: loading from mount" || echo "PASS: loading from local"
 ```
+
+## Additional Tools
+
+The fleet-sync skill includes security tools for safe sharing and leak prevention:
+
+### fleet-sanitize-export.sh
+Creates a sanitized copy of a directory by excluding sensitive patterns (keys, tokens, logs, etc.).
+Usage: `fleet-sanitize-export.sh SOURCE_DIR DEST_DIR [--dry-run]`
+
+### fleet-leak-guard.sh
+Pre-push git hook to detect and prevent accidental commits of sensitive files.
+Install as `.git/hooks/pre-push`:
+```bash
+#!/bin/bash
+# Exit on any error
+set -e
+# Run leak guard - if it finds issues, it will exit non-zero and block push
+"$HOME/.openclaw/workspace/skills/fleet-sync/scripts/fleet-leak-guard.sh"
+```
+Make executable: `chmod +x .git/hooks/pre-push`
 
 ## Manifest
 
